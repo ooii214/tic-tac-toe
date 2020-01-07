@@ -49,7 +49,7 @@ class Board extends React.Component {
         );
     }
     render() {
-        const status = '틱앤톡';
+        const status = '틱앤톡';  
     
         return (
           <div>
