@@ -10,33 +10,60 @@ import './index.css';
 //Board 컴포넌트에서 Square 컴포넌트로 데이터를 전달해봅시다.
 
 //Square 자식 컴포넌트
-class Square extends React.Component {
-    constructor(props) {
-        super(props); //js 클래스에서 하위클래스의 생성자를 정의 할때 항상 super 를 호출해야한다.//리액트 컴포넌트 클래스는 생성자를 가질때 super(props) 호출 구문 부터 작성해야한다.
-        this.state = { //class 에 생성자를 추가하여 state 를 초기화합니다.
-            value : null,
-        };
-    }
-    render() {
-        return (
-            // <button className="square" onClick={function() { alert('click')}}> </button> 아래부터는 (17줄) 화살표함수 사용
-            <button className="square" 
-            onClick={() =>  this.setState({value : 'X'})}
-            > 
-             {this.state.value}
-            </button>
-            //square 를 클릭할대 현재 state 값을 표시하기 위해서 render 함수를 변경할것임
-        );
-    }
-}
+// react 용어로 squares 컴포넌트는 이제 제어되는 컴포넌트이다. 누가? Board !!
+// class Square extends React.Component { //게임 상태를 유지할 필요가 없기 때문에 constructor 지워준다.
+//     // constructor(props) {
+//     //     super(props); //js 클래스에서 하위클래스의 생성자를 정의 할때 항상 super 를 호출해야한다.//리액트 컴포넌트 클래스는 생성자를 가질때 super(props) 호출 구문 부터 작성해야한다.
+//     //     this.state = { //class 에 생성자를 추가하여 state 를 초기화합니다.
+//     //         value : null,
+//     //     };
+//     // }
+//     render() {
+//         return (
+//             // <button className="square" onClick={function() { alert('click')}}> </button> 아래부터는 (17줄) 화살표함수 사용
+//             <button className="square" 
+//             // onClick={() =>  this.setState({value : 'X'})}
+//                onClick={() =>  this.props.onClick()}
+//             > 
+//              {this.props.value}
+//             </button>
+//             //square 를 클릭할대 현재 state 값을 표시하기 위해서 render 함수를 변경할것임
+//         );
+//     }
+// }
 
+//함수 컴포넌트
+//클래스 컴포넌트에서는 onClick ={() => this.props.onClick()}
+function Square(props) {
+  return (
+    <button className="square" onClick={props.onClick}>  
+      {props.value}
+    </button>
+  )
+}
 //Board 부모 컴포넌트
-class Board extends React.Component {
-    constructor(props){
+class Board extends React.Component {//두개의 props전달 1.value 2.onclick
+    constructor(props){  //부모 컴포넌트는 props 를 사용하여 자식 컴포넌트에  state 를 다시 전달 할수 있다.
         super(props);
         this.state = {
-            square : Array(9).fill(null),
+            squares : Array(9).fill(null), //생성자 추가후 9개의 사각형에 해당하는 9개의 null 배열을 초기 state 로 설정
+            xIsNext : true, //(bollean 값) 게임의 state 가 저장될것이다.
         };
+    }
+    handleClick(i) {
+      const squares = this.state.squares.slice();//squares 배열의 사본을 생성!! why? 불변성 때문에
+      if(calculateWinner(squares) || squares[i]) {
+        return;
+      }
+      //데이터 변경에는 2가지
+      //첫번째는 데이터의 값을 직접변경하는 것
+      //두번째는 원하는 변경값을 가진 새로운 사본으로 데이터를 교체
+      // squares[i] = 'X';
+      squares[i] = this.state.xIsNext ? 'X' : 'O';
+      this.setState({
+        squares : squares,
+        xIsNext : !this.state.xIsNext,
+      });
     }
     renderSquare(i) {
       //  return <Square value={i}/>; 코드 수정 합니다!!!~
@@ -48,9 +75,17 @@ class Board extends React.Component {
             />
         );
     }
-    render() {
-        const status = '틱앤톡';  
-    
+   
+    render() { // state.xIsNext 값이 있으면 'X' 없으면 'O'
+        // const status = '틱택톡게임 다음순서 :   ' + (this.state.xIsNext ? 'X' : 'O');  
+        const winner = calculateWinner(this.state.squares);
+        console.log("winner:" + winner);
+        let status;
+        if(winner) {
+          status = 'Winner:' + winner;
+        } else {
+          status ='Next player :' +(this.state.xIsNext ? 'X' : 'O');
+        }
         return (
           <div>
             <div className="status">{status}</div>
@@ -90,11 +125,30 @@ class Game extends React.Component {
     );
     }
 }
-    
+
     // ========================================
     
     ReactDOM.render(
       <Game />,
       document.getElementById('root')
     );
-    
+
+function calculateWinner(squares) {
+  const lines = [
+    [0, 1, 2],
+    [3, 4, 5],
+    [6, 7, 8],
+    [0, 3, 6],
+    [1, 4, 7],
+    [2, 5, 8],
+    [0, 4, 8],
+    [2, 4, 6],
+  ];
+  for (let i = 0; i < lines.length; i++) {
+    const [a, b, c] = lines[i];
+    if(squares[a] && squares[a] === squares[b] && squares[a] === squares[c]) {
+      return squares[a];
+    }
+  }  
+  return null;
+}
