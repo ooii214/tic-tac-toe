@@ -69,6 +69,12 @@ class Board extends React.Component {//두개의 props전달 1.value 2.onclick
         xIsNext : !this.state.xIsNext,
       });
     }
+    jumpTo(step) { //stepNumber 를 업데이트 하기 위해!!!
+      this.setState({
+        stepNumber : step,
+        xIsNext : (step % 2 ) === 0,
+      });
+    }
     renderSquare(i) {
       //  return <Square value={i}/>; 코드 수정 합니다!!!~
       return( 
@@ -124,6 +130,7 @@ class Game extends React.Component {
       history : [{
         squares : Array(9).fill(null),
       }],
+      stepNumber : 0,
       xIsNext : true,
     };
   }
@@ -137,7 +144,7 @@ class Game extends React.Component {
           'Go to move #' + move :
           'Go to game start';
         return (
-          <li>
+          <li key={move}>
             <button onClick={() => this.jumpTo(move)}>{desc}</button>
           </li>
         );
