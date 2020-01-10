@@ -43,15 +43,17 @@ function Square(props) {
 }
 //Board 부모 컴포넌트
 class Board extends React.Component {//두개의 props전달 1.value 2.onclick
-    constructor(props){  //부모 컴포넌트는 props 를 사용하여 자식 컴포넌트에  state 를 다시 전달 할수 있다.
-        super(props);
-        this.state = {
-            squares : Array(9).fill(null), //생성자 추가후 9개의 사각형에 해당하는 9개의 null 배열을 초기 state 로 설정
-            xIsNext : true, //(bollean 값) 게임의 state 가 저장될것이다.
-        };
-    }
+    // constructor(props){  //부모 컴포넌트는 props 를 사용하여 자식 컴포넌트에  state 를 다시 전달 할수 있다.
+    //     super(props);
+    //     this.state = {
+    //         squares : Array(9).fill(null), //생성자 추가후 9개의 사각형에 해당하는 9개의 null 배열을 초기 state 로 설정
+    //         xIsNext : true, //(bollean 값) 게임의 state 가 저장될것이다.
+    //     };
+    // }
     handleClick(i) {
-      const squares = this.state.squares.slice();//squares 배열의 사본을 생성!! why? 불변성 때문에
+      const history = this.state.history;
+      const current = history[history.length -1];
+      const squares = current.squares.slice();//squares 배열의 사본을 생성!! why? 불변성 때문에
       if(calculateWinner(squares) || squares[i]) {
         return;
       }
@@ -61,7 +63,9 @@ class Board extends React.Component {//두개의 props전달 1.value 2.onclick
       // squares[i] = 'X';
       squares[i] = this.state.xIsNext ? 'X' : 'O';
       this.setState({
-        squares : squares,
+        history : history.concat([{
+          squares : squares,
+        }]),
         xIsNext : !this.state.xIsNext,
       });
     }
@@ -69,8 +73,10 @@ class Board extends React.Component {//두개의 props전달 1.value 2.onclick
       //  return <Square value={i}/>; 코드 수정 합니다!!!~
       return( 
             <Square 
-                value={this.state.squares[i]}
-                onClick={() => this.handleClick(i)}//여기 부터 다시 시작~!~~ 
+                value={this.props.squares[i]}
+                onClick={() => this.props.onClick(i)}
+                // value={this.state.squares[i]}
+                // onClick={() => this.handleClick(i)}//여기 부터 다시 시작~!~~ 
                 // *주의 :반환되는 엘리먼트를 여러 줄로 나누어 가독성을 확보하였고 괄호를 추가하여 JavaScript가 return 뒤에 세미콜론을 삽입하지 않아도 코드가 깨지지 않습니다
             />
         );
@@ -78,17 +84,18 @@ class Board extends React.Component {//두개의 props전달 1.value 2.onclick
    
     render() { // state.xIsNext 값이 있으면 'X' 없으면 'O'
         // const status = '틱택톡게임 다음순서 :   ' + (this.state.xIsNext ? 'X' : 'O');  
-        const winner = calculateWinner(this.state.squares);
-        console.log("winner:" + winner);
-        let status;
-        if(winner) {
-          status = 'Winner:' + winner;
-        } else {
-          status ='Next player :' +(this.state.xIsNext ? 'X' : 'O');
-        }
-        return (
-          <div>
-            <div className="status">{status}</div>
+        // const winner = calculateWinner(this.state.squares);
+        // // console.log("winner:" + winner);
+        // let status;
+        // if(winner) {
+        //   status = 'Winner:' + winner;
+        // } else {
+        //   status ='Next player :' +(this.state.xIsNext ? 'X' : 'O');
+        // }
+        // Game 컴포넌트가 게임의 상태를 렌더링하기 때문에 Board 의 render 함수에서 중복되는 코드를 제거 할수 있습니다.리펙토링 이후에 render 함수는 아래와 같다.
+        return (  
+          <div> 
+            {/* <div className="status">{status}</div> */}
             <div className="board-row">
               {this.renderSquare(0)}
               {this.renderSquare(1)}
@@ -111,18 +118,52 @@ class Board extends React.Component {//두개의 props전달 1.value 2.onclick
 
 //Game    
 class Game extends React.Component {
-    render() {
-    return (
-        <div className="game">
-        <div className="game-board">
-            <Board />
-        </div>
-        <div className="game-info">
-            <div>{/* status */}</div>
-            <ol>{/* TODO */}</ol>
-        </div>
-        </div>
-    );
+  constructor(props) {  //2020-01-10(금) 생성자안에 초기 state 설정
+    super(props);
+    this.state = {
+      history : [{
+        squares : Array(9).fill(null),
+      }],
+      xIsNext : true,
+    };
+  }
+    render() {  //render 함수를 가장 최근 기록을 사용하도록 업데이트하녀 게임의 상태를 확인 하고 표시
+      const history = this.state.history;
+      const current = history[history.length -1];
+      const winner = calculateWinner(current.squares);
+
+      const moves = history.map((step, move) => {
+        const desc = move ?
+          'Go to move #' + move :
+          'Go to game start';
+        return (
+          <li>
+            <button onClick={() => this.jumpTo(move)}>{desc}</button>
+          </li>
+        );
+      });
+
+      let status;
+      if(winner) {
+        status ='Winner:' +winner;
+      } else {
+        status = 'Next player:' + (this.state.xIsNext ? 'X' : 'O');
+      }
+
+      return (
+          <div className="game">
+          <div className="game-board">
+              <Board
+                squares={current.squares}
+                onClick={(i) => this.handleClick(i)}
+              />
+          </div>
+          <div className="game-info">
+              <div>{ status }</div>
+              <ol>{moves}</ol>
+          </div>
+          </div>
+      );
     }
 }
 
@@ -152,3 +193,5 @@ function calculateWinner(squares) {
   }  
   return null;
 }
+
+
